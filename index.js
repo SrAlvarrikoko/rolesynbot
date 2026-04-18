@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits, Events } = require("discord.js");
+const https = require("https");
 
 const client = new Client({ 
     intents: [
@@ -19,33 +20,23 @@ client.once("clientReady", () => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-    console.log("Mensaje recibido en canal: " + message.channel.id + " | " + message.content);
-    
     if (message.channel.id !== CANAL_ID) return;
     if (!message.content.includes("GIVEROLE:")) return;
 
-    const mcName = message.content.split("GIVEROLE:")[1].trim().split(" ")[0];
-    console.log("Buscando miembro: " + mcName);
+    const uuid = message.content.split("GIVEROLE:")[1].trim().split(" ")[0].split("\n")[0];
+    console.log("UUID recibido: " + uuid);
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
         await guild.members.fetch();
         
-        const member = guild.members.cache.find(m => 
-            m.user.username.toLowerCase() === mcName.toLowerCase() ||
-            (m.nickname && m.nickname.toLowerCase() === mcName.toLowerCase())
-        );
-
-        if (!member) {
-            console.log("No encontrado. Miembros:");
-            guild.members.cache.forEach(m => {
-                console.log("- " + m.user.username + " | nick: " + m.nickname);
-            });
-            return;
-        }
-
+        // El ID de Discord de SrAlvarikoko es 1232345163926339708
+        // Buscamos directamente por el UUID en los nicknames o usamos el linked de DiscordSRV
+        const discordId = "1232345163926339708"; // temporal para probar
+        
+        const member = await guild.members.fetch(discordId);
         await member.roles.add(ROLE_ID);
-        console.log("✅ Rol dado a " + mcName);
+        console.log("✅ Rol dado a " + discordId);
     } catch (err) {
         console.error(err);
     }
