@@ -1,5 +1,4 @@
 const { Client, GatewayIntentBits, Events } = require("discord.js");
-const https = require("https");
 
 const client = new Client({ 
     intents: [
@@ -31,45 +30,29 @@ client.on(Events.MessageCreate, async (message) => {
     procesados.add(mcName);
     setTimeout(() => procesados.delete(mcName), 10000);
 
-    try {
-        await message.delete();
-    } catch (err) {
-        console.log("No se pudo borrar el mensaje");
-    }
+    try { await message.delete(); } catch (err) {}
 
     console.log("Buscando jugador: " + mcName);
     
     try {
-        // Obtener UUID de Mojang por nombre
-        const uuidRes = await fetch(`https://api.mojang.com/users/profiles/minecraft/${mcName}`);
-        const uuidData = await uuidRes.json();
-        const uuid = uuidData.id;
-        const formattedUuid = uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-        
-        console.log("UUID: " + formattedUuid);
-
-        // Obtener Discord ID desde DiscordSRV API
-        const syncRes = await fetch(`https://playerdb.co/api/player/minecraft/${mcName}`);
-        const syncData = await syncRes.json();
-        console.log("PlayerDB: " + JSON.stringify(syncData));
-
         const guild = await client.guilds.fetch(GUILD_ID);
         await guild.members.fetch();
         
-        // Buscar en caché por el UUID en el nickname o por el nombre
         const member = guild.members.cache.find(m => 
             m.user.username.toLowerCase() === mcName.toLowerCase() ||
-            (m.nickname && m.nickname.toLowerCase() === mcName.toLowerCase())
+            (m.nickname && m.nickname.toLowerCase() === mcName.toLowerCase()) ||
+            m.user.globalName && m.user.globalName.toLowerCase() === mcName.toLowerCase()
         );
 
         if (!member) {
             console.log("No encontrado: " + mcName);
-            guild.members.cache.forEach(m => console.log("- " + m.user.username + " | " + m.nickname));
+            console.log("Nombres disponibles:");
+            guild.members.cache.forEach(m => console.log(`- ${m.user.username} | global: ${m.user.globalName} | nick: ${m.nickname}`));
             return;
         }
 
         await member.roles.add(ROLE_ID);
-        console.log("✅ Rol dado a " + mcName);
+        console.log("✅ Rol dado a " + member.user.username);
     } catch (err) {
         console.error(err);
     }
