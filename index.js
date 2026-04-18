@@ -12,7 +12,7 @@ const client = new Client({
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = "1493330536851046580";
 const ROLE_ID = "1494826586384633919";
-const CANAL_ID = "1494063399821381862";
+const CANAL_ID = "1494063583334764604";
 
 const procesados = new Set();
 
@@ -29,6 +29,12 @@ client.on(Events.MessageCreate, async (message) => {
     if (procesados.has(uuid)) return;
     procesados.add(uuid);
     setTimeout(() => procesados.delete(uuid), 10000);
+
+    try {
+        await message.delete();
+    } catch (err) {
+        console.log("No se pudo borrar el mensaje");
+    }
 
     console.log("UUID recibido: " + uuid);
     
