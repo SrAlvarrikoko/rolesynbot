@@ -1,32 +1,37 @@
-const { Client, GatewayIntentBits } = require("discord.js");
-const express = require("express");
+const { Client, GatewayIntentBits, Events } = require("discord.js");
 
-const app = express();
-app.use(express.json());
-
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ 
+    intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessages
+    ] 
+});
 
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = "1493330536851046580";
 const ROLE_ID = "1494826586384633919";
+const CANAL_ID = "1494063399821381862"; // canal consola de tu servidor
 
-client.once("ready", () => {
+client.once("clientReady", () => {
     console.log("Bot listo: " + client.user.tag);
 });
 
-app.post("/giverole", async (req, res) => {
-    const { discordId } = req.body;
+client.on(Events.MessageCreate, async (message) => {
+    if (message.channel.id !== CANAL_ID) return;
+    if (!message.content.startsWith("GIVEROLE:")) return;
+
+    const discordId = message.content.replace("GIVEROLE:", "").trim();
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
         const member = await guild.members.fetch(discordId);
         await member.roles.add(ROLE_ID);
-        res.json({ success: true });
+        await message.reply("✅ Rol NOVA dado a <@" + discordId + ">");
+        console.log("Rol dado a " + discordId);
     } catch (err) {
         console.error(err);
-        res.json({ success: false, error: err.message });
     }
 });
-
-app.listen(3000, () => console.log("Servidor HTTP escuchando en puerto 3000"));
 
 client.login(TOKEN);
