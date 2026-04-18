@@ -19,11 +19,13 @@ client.once("clientReady", () => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
+    console.log("Mensaje recibido en canal: " + message.channel.id + " | " + message.content);
+    
     if (message.channel.id !== CANAL_ID) return;
     if (!message.content.includes("GIVEROLE:")) return;
 
     const mcName = message.content.split("GIVEROLE:")[1].trim().split(" ")[0];
-    console.log("Buscando miembro con nombre: " + mcName);
+    console.log("Buscando miembro: " + mcName);
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
@@ -35,7 +37,7 @@ client.on(Events.MessageCreate, async (message) => {
         );
 
         if (!member) {
-            console.log("Miembros disponibles:");
+            console.log("No encontrado. Miembros:");
             guild.members.cache.forEach(m => {
                 console.log("- " + m.user.username + " | nick: " + m.nickname);
             });
