@@ -15,60 +15,47 @@ const ROLE_ID = "1494826586384633919";
 const CANAL_ID = "1494063583334764604";
 
 const procesados = new Set();
+const linkedAccounts = {
+    "8d2a6733-8799-3d52-963d-20c59e78dfa5": "1232345163926339708"
+};
 
-// Tabla de UUID -> Discord ID
-const linkedAccounts = {};
-
-async function fetchLinkedAccounts() {
-    try {
-        const res = await fetch("https://raw.githubusercontent.com/TU_USUARIO/rolesynbot/main/accounts.aof");
-        const text = await res.text();
-        text.split("\n").forEach(line => {
-            const parts = line.trim().split(" ");
-            if (parts.length === 2) {
-                linkedAccounts[parts[1]] = parts[0]; // uuid -> discordId
-            }
-        });
-        console.log("Cuentas cargadas: " + Object.keys(linkedAccounts).length);
-    } catch (err) {
-        console.error("Error cargando cuentas: " + err);
-    }
-}
-
-client.once("clientReady", async () => {
+client.once("clientReady", () => {
     console.log("Bot listo: " + client.user.tag);
-    await fetchLinkedAccounts();
 });
 
 client.on(Events.MessageCreate, async (message) => {
     if (message.channel.id !== CANAL_ID) return;
+
+    // Registrar nuevo link: LINKED:uuid:discordId
+    if (message.content.includes("LINKED:")) {
+        const parts = message.content.split("LINKED:")[1].trim().split(":");
+        if (parts.length === 2) {
+            linkedAccounts[parts[0]] = parts[1];
+            console.log("Nuevo link: " + parts[0] + " -> " + parts[1]);
+        }
+        try { await message.delete(); } catch (err) {}
+        return;
+    }
+
     if (!message.content.includes("GIVEROLE:")) return;
 
-    const mcName = message.content.split("GIVEROLE:")[1].trim().split(" ")[0].split("\n")[0];
+    const uuid = message.content.split("GIVEROLE:")[1].trim().split(" ")[0].split("\n")[0];
     
-    if (procesados.has(mcName)) return;
-    procesados.add(mcName);
-    setTimeout(() => procesados.delete(mcName), 10000);
+    if (procesados.has(uuid)) return;
+    procesados.add(uuid);
+    setTimeout(() => procesados.delete(uuid), 10000);
 
     try { await message.delete(); } catch (err) {}
 
-    console.log("Buscando jugador: " + mcName);
+    console.log("UUID recibido: " + uuid);
     
-    try {
-        // Obtener UUID de Mojang
-        const uuidRes = await fetch(`https://api.mojang.com/users/profiles/minecraft/${mcName}`);
-        const uuidData = await uuidRes.json();
-        const rawUuid = uuidData.id;
-        const uuid = rawUuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-        
-        console.log("UUID: " + uuid);
-        
-        const discordId = linkedAccounts[uuid];
-        if (!discordId) {
-            console.log("No vinculado: " + uuid);
-            return;
-        }
+    const discordId = linkedAccounts[uuid];
+    if (!discordId) {
+        console.log("No vinculado: " + uuid);
+        return;
+    }
 
+    try {
         const guild = await client.guilds.fetch(GUILD_ID);
         const member = await guild.members.fetch(discordId);
         await member.roles.add(ROLE_ID);
