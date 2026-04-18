@@ -12,7 +12,7 @@ const client = new Client({
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = "1493330536851046580";
 const ROLE_ID = "1494826586384633919";
-const CANAL_ID = "1494063399821381862";
+const CANAL_ID = "1494063583334764604";
 
 client.once("clientReady", () => {
     console.log("Bot listo: " + client.user.tag);
