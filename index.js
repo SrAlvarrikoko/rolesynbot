@@ -24,7 +24,7 @@ let linkedAccounts = {};
 
 async function cargarAccounts() {
     try {
-        const res = await fetch("https://raw.githubusercontent.com/TU_USUARIO/rolesynbot/main/accounts.aof");
+        const res = await fetch("https://raw.githubusercontent.com/SrAlvarrikoko/rolesynbot/main/accounts.aof");
         const text = await res.text();
         linkedAccounts = {};
         text.split("\n").forEach(line => {
