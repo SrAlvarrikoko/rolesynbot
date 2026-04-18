@@ -16,8 +16,28 @@ const CANAL_ID = "1494063583334764604";
 
 const procesados = new Set();
 
-client.once("clientReady", () => {
+// Tabla de UUID -> Discord ID
+const linkedAccounts = {};
+
+async function fetchLinkedAccounts() {
+    try {
+        const res = await fetch("https://raw.githubusercontent.com/TU_USUARIO/rolesynbot/main/accounts.aof");
+        const text = await res.text();
+        text.split("\n").forEach(line => {
+            const parts = line.trim().split(" ");
+            if (parts.length === 2) {
+                linkedAccounts[parts[1]] = parts[0]; // uuid -> discordId
+            }
+        });
+        console.log("Cuentas cargadas: " + Object.keys(linkedAccounts).length);
+    } catch (err) {
+        console.error("Error cargando cuentas: " + err);
+    }
+}
+
+client.once("clientReady", async () => {
     console.log("Bot listo: " + client.user.tag);
+    await fetchLinkedAccounts();
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -35,24 +55,24 @@ client.on(Events.MessageCreate, async (message) => {
     console.log("Buscando jugador: " + mcName);
     
     try {
-        const guild = await client.guilds.fetch(GUILD_ID);
-        await guild.members.fetch();
+        // Obtener UUID de Mojang
+        const uuidRes = await fetch(`https://api.mojang.com/users/profiles/minecraft/${mcName}`);
+        const uuidData = await uuidRes.json();
+        const rawUuid = uuidData.id;
+        const uuid = rawUuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
         
-        const member = guild.members.cache.find(m => 
-            m.user.username.toLowerCase() === mcName.toLowerCase() ||
-            (m.nickname && m.nickname.toLowerCase() === mcName.toLowerCase()) ||
-            m.user.globalName && m.user.globalName.toLowerCase() === mcName.toLowerCase()
-        );
-
-        if (!member) {
-            console.log("No encontrado: " + mcName);
-            console.log("Nombres disponibles:");
-            guild.members.cache.forEach(m => console.log(`- ${m.user.username} | global: ${m.user.globalName} | nick: ${m.nickname}`));
+        console.log("UUID: " + uuid);
+        
+        const discordId = linkedAccounts[uuid];
+        if (!discordId) {
+            console.log("No vinculado: " + uuid);
             return;
         }
 
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const member = await guild.members.fetch(discordId);
         await member.roles.add(ROLE_ID);
-        console.log("✅ Rol dado a " + member.user.username);
+        console.log("✅ Rol dado a " + discordId);
     } catch (err) {
         console.error(err);
     }
