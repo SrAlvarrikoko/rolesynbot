@@ -20,22 +20,27 @@ const ROLES = {
 };
 
 const procesados = new Set();
-let linkedAccounts = {};
+let linkedAccounts = {
+    "8d2a6733-8799-3d52-963d-20c59e78dfa5": "1232345163926339708"
+};
 
 async function cargarAccounts() {
     try {
         const res = await fetch("https://raw.githubusercontent.com/SrAlvarrikoko/rolesynbot/main/accounts.aof");
         const text = await res.text();
-        linkedAccounts = {};
+        const nuevas = {};
         text.split("\n").forEach(line => {
             const parts = line.trim().split(" ");
             if (parts.length === 2) {
-                linkedAccounts[parts[1]] = parts[0];
+                nuevas[parts[1]] = parts[0];
             }
         });
-        console.log("Cuentas cargadas: " + Object.keys(linkedAccounts).length);
+        if (Object.keys(nuevas).length > 0) {
+            linkedAccounts = nuevas;
+            console.log("Cuentas cargadas: " + Object.keys(linkedAccounts).length);
+        }
     } catch (err) {
-        console.error("Error cargando cuentas: " + err);
+        console.log("Usando cuentas hardcodeadas");
     }
 }
 
@@ -46,6 +51,8 @@ client.once("clientReady", async () => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
+    console.log("Mensaje en canal " + message.channel.id + ": " + message.content);
+
     if (message.channel.id !== CANAL_ID) return;
     
     const content = message.content;
