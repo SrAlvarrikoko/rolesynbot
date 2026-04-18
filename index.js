@@ -23,23 +23,27 @@ client.on(Events.MessageCreate, async (message) => {
     if (!message.content.includes("GIVEROLE:")) return;
 
     const mcName = message.content.split("GIVEROLE:")[1].trim().split(" ")[0];
+    console.log("Buscando miembro con nombre: " + mcName);
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
         await guild.members.fetch();
         
-        // Busca el miembro por nombre de usuario o nickname
         const member = guild.members.cache.find(m => 
-            m.nickname === mcName || m.user.username === mcName
+            m.user.username.toLowerCase() === mcName.toLowerCase() ||
+            (m.nickname && m.nickname.toLowerCase() === mcName.toLowerCase())
         );
 
         if (!member) {
-            console.log("No se encontró miembro con nombre: " + mcName);
+            console.log("Miembros disponibles:");
+            guild.members.cache.forEach(m => {
+                console.log("- " + m.user.username + " | nick: " + m.nickname);
+            });
             return;
         }
 
         await member.roles.add(ROLE_ID);
-        console.log("Rol dado a " + mcName);
+        console.log("✅ Rol dado a " + mcName);
     } catch (err) {
         console.error(err);
     }
